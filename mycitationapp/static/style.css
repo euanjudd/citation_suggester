@@ -1,0 +1,96 @@
+/* Define the color palette and other styles as CSS variables */
+:root {
+    --primary-bg: #06AB78;
+    --primary-text: #FFFFFF;
+    --base-content: #30313D;
+    --base-content-secondary: #5C5B61;
+    --base-bg: #F8F9FD;
+    --highlight-bg: #3d3030;
+    --highlight-text: #FFFFFF;
+    --border-color-default: #30313D;
+}
+
+/* Universal Base Styles */
+base, h1, h2, h3, h4, h5, h6, p {
+    letter-spacing: -0.4px;
+}
+
+/* Backgrounds */
+body {
+    background-color: var(--base-bg);
+}
+
+p {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.625;
+    max-width: 450px;
+}
+
+/* Text Colors */
+.primary-text {
+    color: var(--primary-text);
+}
+.base-content {
+    color: var(--base-content);
+}
+.base-content-secondary {
+    color: var(--base-content-secondary);
+}
+.highlight {
+    color: var(--highlight-text);
+    background-color: var(--highlight-bg);
+    padding: 0px 12px;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--base-content);
+    line-height: 1;
+}
+h1 {
+    font-size: 60px;
+    font-weight: 900;
+}
+@media (max-width: 749px) {
+    h1 {
+        font-size: 36px;  
+    }
+}
+h2 {
+    font-size: 48px;
+    font-weight: 900;
+}
+@media (max-width: 749px) {
+    h2 {
+        font-size: 28px;
+    }
+}
+
+/* Buttons */
+.primary-button, .secondary-button {
+    padding: 5px 20px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 22px;
+    font-weight: 400;
+}
+.primary-button {
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
+}
+.primary-button:hover {
+    background-color: var(--primary-text);
+    color: var(--primary-bg);
+    border-color: var(--primary-bg);
+}
+.secondary-button {
+    background-color: var(--base-content);
+    color: var(--primary-text);
+}
+.secondary-button:hover {
+    background-color: var(--base-bg);
+    color: var(--base-content);
+    border-color: var(--base-content);
+}
