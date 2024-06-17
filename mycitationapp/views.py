@@ -1,3 +1,4 @@
+import requests
 from django.shortcuts import render
 from django.http import JsonResponse
 import replicate
@@ -9,6 +10,43 @@ load_dotenv()  # This loads the environment variables from .env
 def home(request):
     return render(request, 'index.html')
 
+def fetch_sorted_data(query, rows=100, max_tries=10):
+    entries = []
+    offset = 0
+    tries = 0
+
+    while len(entries) < rows and tries < max_tries:
+        params = {
+            'query': query,
+            'filter': 'type:journal-article',
+            'filter': 'has-title:true',
+            'filter': 'has-abstract:true',
+            'rows': 20,
+            'offset': offset
+        }
+        response = requests.get("https://api.crossref.org/works", params=params)
+        if response.status_code == 200:
+            data = response.json()
+            entries.extend(data['message']['items'])
+            offset += 20  # Increase offset to fetch the next batch of results
+        else:
+            print(f"Failed to fetch data: {response.status_code}")
+            break  # Exit loop if there's an HTTP error
+        
+        tries += 1
+
+    return entries[:rows]  # Return only the first 10 entries
+
+def format_entry(entry):
+    """Format entry for display."""
+    return {
+        'title': " ".join(entry.get('title', ['No title available'])),
+        'DOI': entry.get('DOI', 'No DOI available'),
+        'abstract': entry.get('abstract', 'No abstract available'),
+        'date': "-".join(map(str, entry['issued']['date-parts'][0])) if 'issued' in entry else 'No date available',
+        'authors': ", ".join([f"{a.get('given', '')} {a.get('family', '')}" for a in entry.get('author', [])])
+    }
+
 def call_model(request):
     if request.method == 'POST':
         # my_prompt = request.POST.get('input')
@@ -17,8 +55,6 @@ def call_model(request):
         
         if not my_prompt:
             return JsonResponse({'error': 'No input provided'}, status=400)
-        
-        print(f"my_prompt: {my_prompt}")
 
         my_system_prompt = """
             Given the full_text and a specific input_text, perform the following steps:
@@ -58,7 +94,22 @@ def call_model(request):
         full_text = ''.join(outputs)
         cleaned_text = full_text.replace('"', '').replace("\\", "").strip()
 
-        return JsonResponse({'data': cleaned_text})
+    #     return JsonResponse({'data': cleaned_text})
 
+    # else:
+    #     return JsonResponse({'error': 'Invalid method'}, status=400)
+
+        # Fetch and sort CrossRef data
+        entries = fetch_sorted_data(cleaned_text)
+        sorted_by_citations = sorted(entries, key=lambda x: x.get('is-referenced-by-count', 0), reverse=True)
+        sorted_by_date = sorted(entries, key=lambda x: x['issued']['date-parts'][0], reverse=True)
+
+        # Prepare results for JSON response
+        results = {
+            'by_relevance': [format_entry(e) for e in entries[:10]],
+            'by_citations': [format_entry(e) for e in sorted_by_citations[:10]],
+            'by_date': [format_entry(e) for e in sorted_by_date[:10]]
+        }
+        return JsonResponse(results)
     else:
         return JsonResponse({'error': 'Invalid method'}, status=400)

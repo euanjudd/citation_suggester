@@ -4,28 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Streamer</title>
+    <title>Citation Suggester</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@^2.0/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
 
 <body class="base-bg font-sans leading-normal tracking-normal">
     
-    <nav class="base-bg p-4">
-        <div class="container mx-auto">
-            <h1 class="base-content">Academic <span class="highlight">citation suggestions</span><br> from high impact jounrals</h1>
+    <nav class="py-4 mt-12">
+        <div class="container max-w-5xl mx-auto">
+            <h1 class="base-content">Academic <span class="highlight">citation suggestions</span><br>from high impact jounrals</h1>
         </div>
     </nav>
 
-    <div class="container mx-auto base-content-secondary">
+    <div class="container max-w-5xl mx-auto base-content-secondary">
         <p>Lorem ipsum dolor sit amet consectetur. Leo aliquam turpis eu faucibus cum dolor scelerisque ante.</p>
     </div>
 
-    <div class="container mx-auto flex flex-wrap py-6">
+    <div class="max-w-2xl mx-auto">
         <!-- Text Input and Submit Button -->
-        <div class="w-full md:w-1/2 flex flex-col md:mr-6">
-            <textarea id="modelInput" class="resize-none w-full p-4 base-content border rounded-lg focus:outline-none" rows="10" placeholder="Enter your input" style="border-color: #30313D;"></textarea>
-            <button onclick="callModel()" class="mt-4 primary-button font-bold py-2 px-4 rounded">
+        <div class="container mx-auto mt-8">
+            <textarea id="modelInput" class="resize-none w-full p-4 base-content border rounded-lg focus:outline-none" rows="5" placeholder="Enter your input" style="border-color: #30313D;"></textarea>
+            <button onclick="callModel()" class="mt-4 primary-button font-bold py-2 px-4 rounded-full">
                 Suggest Citations
             </button>
         </div>
@@ -33,7 +34,7 @@
             function callModel() {
                 const userInput = document.getElementById('modelInput').value;
                 const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Correctly get the CSRF token
-    
+
                 fetch('/mycitationapp/call-model/', {
                     method: 'POST',
                     headers: {
@@ -48,23 +49,23 @@
                 })
                 .catch(error => console.error('Error:', error));
             }
-    
+
         </script>
 
         <!-- Display Results and Filters -->
-        <div class="w-full md:w-1/2 flex flex-col mt-6">
+        <div class="container mx-auto mt-8">
             <div class="mb-4">
-                <button class="secondary-button text-white py-2 px-4 rounded inline-flex items-center mr-4">
+                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4">
                     Relevance
                 </button>
-                <button class="secondary-button text-white py-2 px-4 rounded inline-flex items-center mr-4">
+                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4">
                     Citation Count
                 </button>
-                <button class="secondary-button text-white py-2 px-4 rounded inline-flex items-center">
+                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center">
                     Recency
                 </button>
             </div>
-            <div id="modelOutput" class="base-bg p-4 border rounded-lg" style="border-color: #30313D;">
+            <div id="modelOutput" class="p-4 border rounded-lg" style="border-color: #30313D;">
                 <!-- Results will be inserted here -->
                 <!-- <div class="p-4 mb-4 border-b">
                     <h3 class="text-lg font-bold">Title of the Paper</h3>
@@ -79,3 +80,4 @@
     <!-- <script src="app.js"></script> -->
 </body>
 </html>
+
