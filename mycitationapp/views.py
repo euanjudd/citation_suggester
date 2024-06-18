@@ -1,4 +1,6 @@
+import pprint
 import requests
+import re
 from django.shortcuts import render
 from django.http import JsonResponse
 import replicate
@@ -9,6 +11,24 @@ load_dotenv()  # This loads the environment variables from .env
 
 def home(request):
     return render(request, 'index.html')
+
+def is_valid_entry(item):
+    """ Check if all required fields are present and valid in the item. """
+    if 'issued' not in item or 'date-parts' not in item['issued'] or len(item['issued']['date-parts'][0]) == 0:
+        return False
+    if not item.get('title'):
+        return False
+    if not item.get('abstract'):
+        return False
+    if 'author' not in item or not item['author']:
+        return False
+    if not item.get('DOI'):
+        return False
+    if not item.get('URL'):
+        return False
+    if not item.get('publisher'):
+        return False
+    return True
 
 def fetch_sorted_data(query, rows=100, max_tries=10):
     entries = []
@@ -27,7 +47,11 @@ def fetch_sorted_data(query, rows=100, max_tries=10):
         response = requests.get("https://api.crossref.org/works", params=params)
         if response.status_code == 200:
             data = response.json()
-            entries.extend(data['message']['items'])
+            for item in data['message']['items']:
+                if is_valid_entry(item):
+                    entries.append(item)
+                if len(entries) >= rows:
+                    break
             offset += 20  # Increase offset to fetch the next batch of results
         else:
             print(f"Failed to fetch data: {response.status_code}")
@@ -37,14 +61,31 @@ def fetch_sorted_data(query, rows=100, max_tries=10):
 
     return entries[:rows]  # Return only the first 10 entries
 
+def clean_abstract(text):
+    """Remove HTML/XML tags and unify as a single string."""
+    # Remove <jats:title>Abstract</jats:title>
+    text = re.sub(r'<jats:title>[^<]*</jats:title>', '', text)
+    # Remove tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Remove extra whitespaces
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
 def format_entry(entry):
     """Format entry for display."""
+    abstract = entry.get('abstract', 'No abstract available')
+    cleaned_abstract = clean_abstract(abstract)
+
     return {
         'title': " ".join(entry.get('title', ['No title available'])),
         'DOI': entry.get('DOI', 'No DOI available'),
-        'abstract': entry.get('abstract', 'No abstract available'),
+        'abstract': cleaned_abstract,
         'date': "-".join(map(str, entry['issued']['date-parts'][0])) if 'issued' in entry else 'No date available',
-        'authors': ", ".join([f"{a.get('given', '')} {a.get('family', '')}" for a in entry.get('author', [])])
+        'year': str(entry['issued']['date-parts'][0][0]),
+        'authors': ", ".join([f"{a.get('given', '')} {a.get('family', '')}" for a in entry.get('author', [])]),
+        'URL': entry.get('URL', 'No DOI available'),
+        'publisher': entry.get('publisher', 'No publisher available'),
+        'cited': entry.get('is-referenced-by-count', 0)
     }
 
 def call_model(request):
@@ -94,10 +135,7 @@ def call_model(request):
         full_text = ''.join(outputs)
         cleaned_text = full_text.replace('"', '').replace("\\", "").strip()
 
-    #     return JsonResponse({'data': cleaned_text})
-
-    # else:
-    #     return JsonResponse({'error': 'Invalid method'}, status=400)
+        # cleaned_text = 'Soft Robotics AND Vibration-Driven Tensegrity Robot AND Control Learning'
 
         # Fetch and sort CrossRef data
         entries = fetch_sorted_data(cleaned_text)
@@ -110,6 +148,10 @@ def call_model(request):
             'by_citations': [format_entry(e) for e in sorted_by_citations[:10]],
             'by_date': [format_entry(e) for e in sorted_by_date[:10]]
         }
+
+        for entry in results['by_relevance']:
+            print(entry['title'])
+
         return JsonResponse(results)
     else:
         return JsonResponse({'error': 'Invalid method'}, status=400)

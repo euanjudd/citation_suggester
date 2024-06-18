@@ -12,72 +12,112 @@
 
 <body class="base-bg font-sans leading-normal tracking-normal">
     
-    <nav class="py-4 mt-12">
+    <nav class="py-8 mt-12">
         <div class="container max-w-5xl mx-auto">
-            <h1 class="base-content">Academic <span class="highlight">citation suggestions</span><br>from high impact jounrals</h1>
+            <h1 class="base-content">Academic <span class="highlight">Citation Suggester</span></h1>
         </div>
     </nav>
 
     <div class="container max-w-5xl mx-auto base-content-secondary">
-        <p>Lorem ipsum dolor sit amet consectetur. Leo aliquam turpis eu faucibus cum dolor scelerisque ante.</p>
+        <p>Easily find academic citations for your research with high impact journals.</p>
+        <ul class="list-disc list-inside mt-2">
+            <li>Enter your full document text in the first textbox.</li>
+            <li>Enter the specific sentence you need a citation for in the second textbox.</li>
+            <li>Click the "Suggest Citations" button to receive citation suggestions.</li>
+        </ul>
     </div>
 
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-5xl mx-auto">
         <!-- Text Input and Submit Button -->
-        <div class="container mx-auto mt-8">
-            <textarea id="modelInput" class="resize-none w-full p-4 base-content border rounded-lg focus:outline-none" rows="5" placeholder="Enter your input" style="border-color: #30313D;"></textarea>
+        <div class="container mx-auto mt-12">
+            <textarea id="textFullDoc" class="resize-none w-full p-4 base-content border rounded-lg focus:outline-none" rows="5" placeholder="Enter your full document" style="border-color: #30313D;"></textarea>
+            <textarea id="textNeedingCitation" class="resize-none w-full p-4 base-content border rounded-lg focus:outline-none" rows="2" placeholder="Enter the sentence that needs a citation" style="border-color: #30313D;"></textarea>
             <button onclick="callModel()" class="mt-4 primary-button font-bold py-2 px-4 rounded-full">
                 Suggest Citations
             </button>
         </div>
+
+        <div id="loader" class="loader-container hidden">
+            <div class="loader"></div>
+            <p>Loading...</p>
+        </div>
+
         <script>
-            function callModel() {
-                const userInput = document.getElementById('modelInput').value;
-                const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Correctly get the CSRF token
-
-                fetch('/mycitationapp/call-model/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({input: userInput})
-                })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('modelOutput').innerText = data.data;
-                })
-                .catch(error => console.error('Error:', error));
+            function showLoader() {
+                document.getElementById('loader').classList.remove('hidden');
             }
-
+            function hideLoader() {
+                document.getElementById('loader').classList.add('hidden');
+            }
         </script>
 
-        <!-- Display Results and Filters -->
+        <!-- Buttons for selecting the type of sorting -->
         <div class="container mx-auto mt-8">
-            <div class="mb-4">
-                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4">
-                    Relevance
-                </button>
-                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4">
-                    Citation Count
-                </button>
-                <button class="secondary-button py-2 px-4 rounded-full inline-flex items-center">
-                    Recency
-                </button>
-            </div>
-            <div id="modelOutput" class="p-4 border rounded-lg" style="border-color: #30313D;">
-                <!-- Results will be inserted here -->
-                <!-- <div class="p-4 mb-4 border-b">
-                    <h3 class="text-lg font-bold">Title of the Paper</h3>
-                    <p class="text-gray-800">Author(s) Name - Year</p>
-                    <p class="text-gray-600">The first two lines of the abstract...</p>
-                </div> -->
-
-            </div>
+            <button id="btnRelevance" class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4" onclick="showResults('by_relevance', 'btnRelevance')">Relevance</button>
+            <button id="btnCitations" class="secondary-button py-2 px-4 rounded-full inline-flex items-center mr-4" onclick="showResults('by_citations', 'btnCitations')">Citation Count</button>
+            <button id="btnDate" class="secondary-button py-2 px-4 rounded-full inline-flex items-center" onclick="showResults('by_date', 'btnDate')">Recency</button>
+        </div>        
+        <div id="modelOutput" class="p-4 mt-4 border rounded-lg" style="border-color: #30313D;">
+            <!-- Results will be inserted here -->
         </div>
-    </div>
 
-    <!-- <script src="app.js"></script> -->
+        <script>
+        let currentData = {};  // This will store the current data fetched from the server
+
+        function callModel() {
+            showLoader();
+            const userDoc = document.getElementById('textFullDoc').value;
+            const userSentence = document.getElementById('textNeedingCitation').value;
+            const userInput = "full_text: " + userDoc + "\ninput_text: " + userSentence;
+
+            const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            fetch('/mycitationapp/call-model/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({input: userInput})
+            })
+            .then(response => response.json())
+            .then(data => {
+                currentData = data;  // Store fetched data
+                showResults('by_relevance', 'btnRelevance');  // Default view
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showResults(type, buttonId) {
+
+            // Highlight the active button
+            const buttons = document.querySelectorAll('.secondary-button');
+            buttons.forEach(button => {
+                button.classList.remove('active'); // Remove 'active' class from all buttons
+            });
+            const activeButton = document.getElementById(buttonId);
+            activeButton.classList.add('active'); // Add 'active' class to the clicked button
+
+            hideLoader();
+
+            const modelOutput = document.getElementById('modelOutput');
+            modelOutput.innerHTML = '';  // Clear previous results
+            if (currentData[type]) {
+                currentData[type].forEach(entry => {
+                    const entryDiv = document.createElement('div');
+                    // entryDiv.className = 'p-4 mb-4 border-b';
+                    entryDiv.innerHTML = `
+                        <h3 class="text-lg font-bold" style='color: #1a0dab;'><a href="${entry.URL}" target="_blank">${entry.title}</a></h3>
+                        <p style='color: #006621;'>${entry.authors} - ${entry.publisher}, ${entry.year}</p>
+                        <p class="base-content-secondary text-preview">${entry.abstract}</p>
+                        <p style='color: #1a0dab;'>Cited by ${entry.cited}</p>
+                    `;
+                    modelOutput.appendChild(entryDiv);
+                });
+            }
+        }
+        </script>
+    </div>
 </body>
 </html>
 
