@@ -8,7 +8,7 @@
     },
     "workspaceFolder": "/app",
     "mounts": [
-        "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cache$
+        "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cache$",
     ],
     "settings": {
         "terminal.integrated.shell.linux": "/bin/bash",

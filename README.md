@@ -13,3 +13,9 @@ Autocomplete takes the last few words and picks the word that most commonly come
 - Paste the full text of your document into the first textbox.
 - Enter the specific sentence that requires a citation in the second textbox.
 - Click the "Suggest Citations" button to receive citation suggestions.
+
+## Tools Used
+
+- **Replicate API**: Used Llama 3 8b Instruct to extract keywords from user input.
+- **CrossRef API**: Accessed relevant academic citations.
+- **Django**: Created a user-friendly web interface for inputting documents and displaying citation suggestions.
